@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-import json
-from pathlib import Path
-
 import pytest
 
-from herhim.catalog.loader import load_card_file
+from herhim.catalog.loader import load_manifest
+from herhim.catalog.registry import PersonaRegistry
 from herhim.catalog.validate import validate_persona, validate_persona_card
 from herhim.errors import PersonaError
 from herhim.models.persona import Persona
@@ -80,29 +78,21 @@ class TestCatalogueLoading:
 
     def test_load_her_catalogue(self) -> None:
         """Can load the her catalogue."""
-        from herhim.catalog.registry import PersonaRegistry
-
         registry = PersonaRegistry.load(("her",))
         assert len(registry) >= 24
 
     def test_load_him_catalogue(self) -> None:
         """Can load the him catalogue."""
-        from herhim.catalog.registry import PersonaRegistry
-
         registry = PersonaRegistry.load(("him",))
         assert len(registry) >= 24
 
     def test_load_both_catalogues(self) -> None:
         """Can load both catalogues together."""
-        from herhim.catalog.registry import PersonaRegistry
-
         registry = PersonaRegistry.load(("her", "him"))
         assert len(registry) >= 48
 
     def test_persona_not_found(self) -> None:
         """Looking up non-existent persona raises error."""
-        from herhim.catalog.registry import PersonaRegistry
-
         registry = PersonaRegistry.load()
         with pytest.raises(PersonaError):
             registry.get("nonexistent-id")
@@ -113,8 +103,6 @@ class TestManifestLoading:
 
     def test_load_her_manifest(self) -> None:
         """Can load the her manifest."""
-        from herhim.catalog.loader import load_manifest
-
         manifest = load_manifest("her")
         assert manifest["catalogue"] == "her"
         assert "title" in manifest
@@ -122,8 +110,6 @@ class TestManifestLoading:
 
     def test_load_him_manifest(self) -> None:
         """Can load the him manifest."""
-        from herhim.catalog.loader import load_manifest
-
         manifest = load_manifest("him")
         assert manifest["catalogue"] == "him"
         assert "title" in manifest

@@ -6,11 +6,11 @@ import pytest
 
 from herhim.affect.engine import AffectEngine, persona_engine
 from herhim.affect.moods import MoodLabel, derive_mood, event_mood_bias
-from herhim.models.affect import AffectVector, AffectDelta
-from herhim.models.persona import Persona, LoreEntry
-from herhim.models.traits import TraitProfile
-from herhim.models.relationship import RelationshipState
+from herhim.models.affect import AffectDelta, AffectVector, _clamp
 from herhim.models.events import EventKind
+from herhim.models.persona import LoreEntry, Persona
+from herhim.models.relationship import RelationshipState
+from herhim.models.traits import TraitProfile
 
 
 class TestAffectVector:
@@ -18,8 +18,6 @@ class TestAffectVector:
 
     def test_clamping(self) -> None:
         """Values are clamped to valid ranges."""
-        from herhim.models.affect import _clamp
-
         assert _clamp(-0.5, 0.0, 1.0) == 0.0
         assert _clamp(0.5, 0.0, 1.0) == 0.5
         assert _clamp(1.5, 0.0, 1.0) == 1.0
@@ -42,7 +40,14 @@ class TestMoodDerivation:
         """A rejection with high assertion should produce defiant mood."""
         vector = AffectVector(valence=-0.3, arousal=0.6, assertion=0.6, tenderness=0.4)
         traits = TraitProfile(bratty=0.55, playfulness=0.65)
-        relationship = RelationshipState(trust=0.5, intimacy=0.5, tension=0.1, jealousy=0.1, dependency=0.1, commitment=0.1)
+        relationship = RelationshipState(
+            trust=0.5,
+            intimacy=0.5,
+            tension=0.1,
+            jealousy=0.1,
+            dependency=0.1,
+            commitment=0.1,
+        )
 
         # REJECTION event should apply bias toward DEFIANT
         biases = event_mood_bias(EventKind.REJECTION)
@@ -60,7 +65,14 @@ class TestMoodDerivation:
         """At baseline, mood should be calm."""
         vector = AffectVector(valence=0.15, arousal=0.40, assertion=0.35, tenderness=0.50)
         traits = TraitProfile()
-        relationship = RelationshipState(trust=0.5, intimacy=0.5, tension=0.1, jealousy=0.1, dependency=0.1, commitment=0.1)
+        relationship = RelationshipState(
+            trust=0.5,
+            intimacy=0.5,
+            tension=0.1,
+            jealousy=0.1,
+            dependency=0.1,
+            commitment=0.1,
+        )
 
         mood_result = derive_mood(
             vector=vector,
@@ -89,7 +101,12 @@ class TestAffectEngine:
             first_mes="Hello",
             mes_example="Hi",
             system_prompt="You are a test persona.",
-            affect_baseline=AffectVector(valence=0.15, arousal=0.40, assertion=0.35, tenderness=0.50),
+            affect_baseline=AffectVector(
+                valence=0.15,
+                arousal=0.40,
+                assertion=0.35,
+                tenderness=0.50,
+            ),
             traits=TraitProfile(
                 extraversion=0.70,
                 playfulness=0.65,
@@ -113,7 +130,12 @@ class TestAffectEngine:
                 commitment=0.10,
             ),
             lorebook=(
-                LoreEntry(keys=("test",), content="Test lore entry for unit testing.", position="before_char", constant=True),
+                LoreEntry(
+                    keys=("test",),
+                    content="Test lore entry for unit testing.",
+                    position="before_char",
+                    constant=True,
+                ),
             ),
         )
 
@@ -149,8 +171,6 @@ class TestGoldenScenario:
 
     def test_rejection_then_provocation(self) -> None:
         """Validate the golden scenario from the spec."""
-        from herhim.models.traits import TraitProfile
-
         # Create a persona matching her-001-sassy
         persona = Persona(
             persona_id="her-001-sassy",
@@ -164,7 +184,12 @@ class TestGoldenScenario:
             first_mes="Oh, you finally showed up.",
             mes_example="I like you.",
             system_prompt="You are Sassy Maya.",
-            affect_baseline=AffectVector(valence=0.15, arousal=0.40, assertion=0.35, tenderness=0.50),
+            affect_baseline=AffectVector(
+                valence=0.15,
+                arousal=0.40,
+                assertion=0.35,
+                tenderness=0.50,
+            ),
             traits=TraitProfile(
                 extraversion=0.70,
                 playfulness=0.65,
@@ -188,7 +213,12 @@ class TestGoldenScenario:
                 commitment=0.10,
             ),
             lorebook=(
-                LoreEntry(keys=("sassy",), content="Sassy Maya profile content.", position="before_char", constant=True),
+                LoreEntry(
+                    keys=("sassy",),
+                    content="Sassy Maya profile content.",
+                    position="before_char",
+                    constant=True,
+                ),
             ),
         )
 

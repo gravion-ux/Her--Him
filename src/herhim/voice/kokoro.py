@@ -9,7 +9,9 @@ from __future__ import annotations
 import shutil
 import subprocess
 import tempfile
+import wave
 from pathlib import Path
+from typing import Any
 
 from herhim.errors import VoiceError
 from herhim.models.voice import VoiceClip, VoiceInfo, VoiceParams
@@ -90,8 +92,8 @@ class KokoroVoiceEngine:
     def _synthesize_with_package(self, text: str, output: Path, params: VoiceParams) -> None:
         """Render using the ``kokoro`` Python package."""
         try:
-            import numpy as np  # type: ignore[import-not-found]
-            from kokoro import KPipeline  # type: ignore[import-not-found]
+            import numpy as np
+            from kokoro import KPipeline
         except ImportError as exc:
             raise VoiceError(
                 "kokoro is not installed. Install the 'voice' extra: pip install 'herhim[voice]'"
@@ -105,26 +107,17 @@ class KokoroVoiceEngine:
         _write_wav(output, np.concatenate(chunks), 24000)
 
 
-def _write_wav(path: Path, samples: object, sample_rate: int) -> None:
+def _write_wav(path: Path, samples: Any, sample_rate: int) -> None:
     """Write a mono 16-bit WAV file."""
-    import wave
-
-    data = samples
+    data: Any = samples
     if hasattr(data, "tolist"):
-        data = data.tolist()  # type: ignore[union-attr]
+        data = data.tolist()
     with wave.open(str(path), "wb") as handle:
         handle.setnchannels(1)
         handle.setsampwidth(2)
         handle.setframerate(sample_rate)
         frames = bytearray()
-        for value in data:  # type: ignore[union-attr]
+        for value in data:
             clipped = max(-1.0, min(1.0, float(value)))
             frames += int(clipped * 32767).to_bytes(2, "little", signed=True)
         handle.writeframes(bytes(frames))
-
-
-def wave_open(path: Path):  # noqa: ANN201 - small compatibility shim
-    """Open a WAV file for writing."""
-    import wave
-
-    return wave.open(str(path), "wb")

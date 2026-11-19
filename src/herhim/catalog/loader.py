@@ -10,7 +10,7 @@ from herhim.models.card import validate_card_shape
 from herhim.models.persona import Persona
 from herhim.paths import catalogue_dir
 
-__all__ = ["load_catalogue_cards", "load_card_file", "load_manifest"]
+__all__ = ["load_card_file", "load_catalogue_cards", "load_manifest"]
 
 
 def load_card_file(path: Path) -> Persona:

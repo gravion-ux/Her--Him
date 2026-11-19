@@ -44,7 +44,9 @@ def scan_lorebook(entries: tuple[LoreEntry, ...], text: str) -> list[LoreEntry]:
     lowered = text.lower()
     words = set(_normalise(text))
     constant = [entry for entry in entries if entry.constant]
-    triggered = [entry for entry in entries if not entry.constant and _matches(entry, words, lowered)]
+    triggered = [
+        entry for entry in entries if not entry.constant and _matches(entry, words, lowered)
+    ]
     return constant + triggered
 
 

@@ -8,12 +8,12 @@ built between the persona and the user, and it can regress.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 __all__ = ["RelationshipStage", "RelationshipState"]
 
 
-class RelationshipStage(str, Enum):
+class RelationshipStage(StrEnum):
     """The six relationship stages, in ascending order of closeness."""
 
     STRANGER = "STRANGER"

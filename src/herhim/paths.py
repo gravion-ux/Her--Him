@@ -5,7 +5,7 @@ from __future__ import annotations
 from importlib.resources import files
 from pathlib import Path
 
-__all__ = ["data_dir", "sample_dir", "catalogue_dir"]
+__all__ = ["catalogue_dir", "data_dir", "sample_dir"]
 
 
 def data_dir() -> Path:

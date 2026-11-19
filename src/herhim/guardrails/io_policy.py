@@ -50,7 +50,9 @@ class IOOperation:
         base = self.summary or self.name
         if not details:
             return base
-        rendered = ", ".join(f"{key}={value}" for key, value in details.items() if value is not None)
+        rendered = ", ".join(
+            f"{key}={value}" for key, value in details.items() if value is not None
+        )
         return f"{base} ({rendered})" if rendered else base
 
     def to_dict(self) -> dict[str, object]:

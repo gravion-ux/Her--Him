@@ -73,7 +73,12 @@ _RULES: tuple[Rule, ...] = (
     # --- boundary --------------------------------------------------------
     Rule(EventKind.BOUNDARY, r"\bdon'?t touch me\b", 0.95, "physical boundary"),
     Rule(EventKind.BOUNDARY, r"\bno touching\b", 0.95, "physical boundary"),
-    Rule(EventKind.BOUNDARY, r"\bdon'?t (?:touch|go near|come closer|come back|do that)\b", 0.75, "physical boundary"),
+    Rule(
+        EventKind.BOUNDARY,
+        r"\bdon'?t (?:touch|go near|come closer|come back|do that)\b",
+        0.75,
+        "physical boundary",
+    ),
     Rule(EventKind.BOUNDARY, r"\bback off\b", 0.85, "physical boundary"),
     Rule(EventKind.BOUNDARY, r"\bi'?m not comfortable\b", 0.90, "stated boundary"),
     Rule(EventKind.BOUNDARY, r"\bstop\b", 0.60, "stated boundary"),
@@ -83,11 +88,21 @@ _RULES: tuple[Rule, ...] = (
     Rule(EventKind.JEALY_TRIGGER, r"\bjealous\b", 0.80, "jealousy probe"),
     Rule(EventKind.JEALY_TRIGGER, r"\bwho'?s (?:she|he|they)\b", 0.85, "jealousy probe"),
     Rule(EventKind.JEALY_TRIGGER, r"\bmy ex\b", 0.85, "jealousy probe"),
-    Rule(EventKind.JEALY_TRIGGER, r"\bother (?:girl|guy|woman|man|person)\b", 0.70, "jealousy probe"),
+    Rule(
+        EventKind.JEALY_TRIGGER,
+        r"\bother (?:girl|guy|woman|man|person)\b",
+        0.70,
+        "jealousy probe",
+    ),
     Rule(EventKind.JEALY_TRIGGER, r"\b(?:another|other) girlfriend\b", 0.90, "jealousy probe"),
     # --- rejection -------------------------------------------------------
     Rule(EventKind.REJECTION, r"\bno\b", 0.75, "flat refusal"),
-    Rule(EventKind.REJECTION, r"\bnot (?:going to|doing that|like that|interested)\b", 0.80, "refusal"),
+    Rule(
+        EventKind.REJECTION,
+        r"\bnot (?:going to|doing that|like that|interested)\b",
+        0.80,
+        "refusal",
+    ),
     Rule(EventKind.REJECTION, r"\bi (?:don'?t|do not) (?:want|feel like)\b", 0.80, "refusal"),
     Rule(EventKind.REJECTION, r"\bnever\b", 0.75, "refusal"),
     Rule(EventKind.REJECTION, r"\bforget it\b", 0.70, "refusal"),
@@ -142,7 +157,12 @@ _RULES: tuple[Rule, ...] = (
     Rule(EventKind.COMPLIANCE, r"\bdo it\b", 0.75, "agreement"),
     Rule(EventKind.COMPLIANCE, r"\bthat'?s fine\b", 0.70, "agreement"),
     # --- praise ----------------------------------------------------------
-    Rule(EventKind.PRAISE, r"\byou'?re (?:amazing|great|beautiful|gorgeous|awesome)\b", 0.85, "praise"),
+    Rule(
+        EventKind.PRAISE,
+        r"\byou'?re (?:amazing|great|beautiful|gorgeous|awesome)\b",
+        0.85,
+        "praise",
+    ),
     Rule(EventKind.PRAISE, r"\bi (?:like|love) (?:you|that|this)\b", 0.70, "praise"),
     Rule(EventKind.PRAISE, r"\bwell done\b", 0.75, "praise"),
     Rule(EventKind.PRAISE, r"\bgood (?:boy|girl)\b", 0.70, "praise"),

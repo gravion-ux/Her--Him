@@ -68,6 +68,21 @@ def load_sample_index(root: str | None = None) -> SampleIndex:
     return SampleIndex(entries=list(entries), root=base)
 
 
+def _duration_ms(entry: dict[str, object]) -> int:
+    """Return the clip duration in milliseconds, or zero when it is missing."""
+    value = entry.get("duration_ms")
+    if isinstance(value, bool):
+        return 0
+    if isinstance(value, (int, float)):
+        return int(value)
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            return 0
+    return 0
+
+
 class SamplesVoiceEngine:
     """Plays back the committed clips."""
 
@@ -86,7 +101,7 @@ class SamplesVoiceEngine:
         return VoiceClip(
             clip_id=str(entry.get("id", params.voice_id)),
             path=str(self._index.path_for(str(entry.get("id", params.voice_id)))),
-            duration_ms=int(entry.get("duration_ms", 0) or 0),
+            duration_ms=_duration_ms(entry),
             params=params,
             transcript=str(entry.get("transcript", text)),
         )

@@ -175,7 +175,8 @@ class MemoryStore:
         if target is None:
             return None
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(json.dumps(self.to_dict(), indent=2, ensure_ascii=False), encoding="utf-8")
+        payload = json.dumps(self.to_dict(), indent=2, ensure_ascii=False)
+        target.write_text(payload, encoding="utf-8")
         return target
 
     @classmethod

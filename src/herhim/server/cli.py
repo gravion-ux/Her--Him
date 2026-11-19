@@ -8,7 +8,7 @@ import sys
 from herhim.errors import EXIT_OK, EXIT_USAGE
 from herhim.server import run_server
 
-__all__ = ["main", "EXIT_OK", "EXIT_USAGE"]
+__all__ = ["EXIT_OK", "EXIT_USAGE", "main"]
 
 
 def build_parser() -> argparse.ArgumentParser:

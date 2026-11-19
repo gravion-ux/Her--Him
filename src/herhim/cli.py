@@ -9,9 +9,11 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections.abc import Callable
 from pathlib import Path
+from typing import cast
 
-from herhim.catalog.loader import load_catalogue_cards, load_manifest
+from herhim.catalog.loader import load_catalogue_cards
 from herhim.catalog.registry import PersonaRegistry
 from herhim.catalog.validate import validate_persona
 from herhim.errors import EXIT_INVALID_INPUT, EXIT_INVALID_STATE, EXIT_OK, EXIT_USAGE
@@ -19,13 +21,14 @@ from herhim.experience.her import load_her_surface
 from herhim.experience.him import load_him_surface
 from herhim.guardrails.audit import AuditLog
 from herhim.models.persona import Persona
-from herhim.providers.base import LLMProvider, LLMResponse, TurnContext
+from herhim.providers.base import LLMProvider
 from herhim.providers.offline import OfflineProvider
-from herhim.providers.router import ProviderRouter
-from herhim.voice.factory import build_voice_engine, available_engines
-from herhim.voice.samples import SamplesVoiceEngine
+from herhim.voice.factory import available_engines, build_voice_engine
 
-__all__ = ["main", "EXIT_OK", "EXIT_USAGE", "EXIT_INVALID_INPUT", "EXIT_INVALID_STATE"]
+__all__ = ["EXIT_INVALID_INPUT", "EXIT_INVALID_STATE", "EXIT_OK", "EXIT_USAGE", "main"]
+
+#: The providers the chat command can build today.
+PROVIDER_FACTORIES: dict[str, Callable[[], LLMProvider]] = {"offline": OfflineProvider}
 
 
 def cmd_catalogue(args: argparse.Namespace) -> int:
@@ -72,13 +75,13 @@ def cmd_show(args: argparse.Namespace) -> int:
     for cat in catalogs:
         try:
             personas.extend(load_catalogue_cards(cat))
-        except Exception:
-            pass
+        except Exception as exc:
+            print(f"warning: skipping {cat}: {exc}", file=sys.stderr)
 
     persona = None
-    for p in personas:
-        if p.persona_id == args.persona_id:
-            persona = p
+    for candidate in personas:
+        if candidate.persona_id == args.persona_id:
+            persona = candidate
             break
 
     if persona is None:
@@ -108,6 +111,11 @@ def cmd_chat(args: argparse.Namespace) -> int:
         print(f"unknown catalogue: {args.catalogue}", file=sys.stderr)
         return EXIT_INVALID_INPUT
 
+    factory = PROVIDER_FACTORIES.get(args.provider)
+    if factory is None:
+        print(f"unknown provider: {args.provider}", file=sys.stderr)
+        return EXIT_INVALID_INPUT
+
     # Load the surface to get the default persona
     surface = load_her_surface() if args.catalogue == "her" else load_him_surface()
 
@@ -120,16 +128,14 @@ def cmd_chat(args: argparse.Namespace) -> int:
         print(f"error loading persona: {exc}", file=sys.stderr)
         return EXIT_INVALID_STATE
 
-    provider: LLMProvider = args.provider
-    if args.offline:
-        provider = OfflineProvider()
-
-    router: ProviderRouter = ProviderRouter(provider) if provider else build_router(OfflineProvider())
+    # The session wraps the provider in its own router, so the provider itself
+    # is what gets handed over here.
+    provider: LLMProvider = factory()
 
     session = Session(
         persona=persona,
-        provider=router,
-        voice_engine=build_voice_engine(herhim_voice_engine="samples"),
+        provider=provider,
+        voice_engine=build_voice_engine("samples"),
     )
 
     if args.json_output:
@@ -137,7 +143,9 @@ def cmd_chat(args: argparse.Namespace) -> int:
         print(json.dumps(initial_state, indent=2))
     else:
         print(f"Chat with {persona.display_name} [{persona.persona_id}]")
-        print(f"Mood: {session.engine.mood.value}, Stage: {session.engine.relationship.stage().value}")
+        mood = session.engine.mood.value
+        stage = session.engine.relationship.stage().value
+        print(f"Mood: {mood}, Stage: {stage}")
         print("---")
 
     turn_count = 0
@@ -162,7 +170,55 @@ def cmd_chat(args: argparse.Namespace) -> int:
             print(json.dumps(result.to_dict(), indent=2))
         else:
             print(f"{persona.display_name}: {result.text}")
-            print(f"  mood={result.mood}, stage={result.state()['stage']}")
+            print(f"  mood={result.mood}, stage={result.state['stage']}")
+
+    return EXIT_OK
+
+
+def cmd_card_export(args: argparse.Namespace) -> int:
+    """Export every persona card in one catalogue to disk."""
+    if args.catalogue not in ("her", "him"):
+        print(f"unknown catalogue: {args.catalogue}", file=sys.stderr)
+        return EXIT_INVALID_INPUT
+
+    try:
+        personas = load_catalogue_cards(args.catalogue)
+        for persona in personas:
+            output = persona.to_dict()
+            path = Path(args.output or f"{persona.persona_id}.json")
+            path.write_text(json.dumps(output, indent=2), encoding="utf-8")
+            print(f"Wrote {path}")
+    except Exception as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return EXIT_INVALID_STATE
+
+    return EXIT_OK
+
+
+def cmd_card_import(args: argparse.Namespace) -> int:
+    """Import one persona card from a JSON file into its catalogue."""
+    if not args.file:
+        print("missing --file", file=sys.stderr)
+        return EXIT_USAGE
+
+    try:
+        data = json.loads(Path(args.file).read_text(encoding="utf-8"))
+        persona = Persona.from_card(data)
+        problems = validate_persona(persona)
+        if problems:
+            print(f"validation errors: {'; '.join(problems)}", file=sys.stderr)
+            return EXIT_INVALID_STATE
+        # Write to data directory
+        from herhim.paths import catalogue_dir
+
+        target_dir = catalogue_dir(persona.catalogue)
+        target_dir.mkdir(parents=True, exist_ok=True)
+        target = target_dir / f"{persona.persona_id}.json"
+        target.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        print(f"Imported {target}")
+    except Exception as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return EXIT_INVALID_STATE
 
     return EXIT_OK
 
@@ -170,50 +226,12 @@ def cmd_chat(args: argparse.Namespace) -> int:
 def cmd_card(args: argparse.Namespace) -> int:
     """Export or import persona cards."""
     if args.command == "export":
-        if args.catalogue not in ("her", "him"):
-            print(f"unknown catalogue: {args.catalogue}", file=sys.stderr)
-            return EXIT_INVALID_INPUT
+        return cmd_card_export(args)
+    if args.command == "import":
+        return cmd_card_import(args)
 
-        try:
-            personas = load_catalogue_cards(args.catalogue)
-            for persona in personas:
-                output = persona.to_dict()
-                path = Path(args.output or f"{persona.persona_id}.json")
-                path.write_text(json.dumps(output, indent=2), encoding="utf-8")
-                print(f"Wrote {path}")
-        except Exception as exc:
-            print(f"error: {exc}", file=sys.stderr)
-            return EXIT_INVALID_STATE
-
-    elif args.command == "import":
-        if not args.file:
-            print("missing --file", file=sys.stderr)
-            return EXIT_USAGE
-
-        try:
-            data = json.loads(Path(args.file).read_text(encoding="utf-8"))
-            persona = Persona.from_card(data)
-            # Validate
-            problems = validate_persona(persona)
-            if problems:
-                print(f"validation errors: {'; '.join(problems)}", file=sys.stderr)
-                return EXIT_INVALID_STATE
-            # Write to data directory
-            from herhim.paths import catalogue_dir
-            target_dir = catalogue_dir(persona.catalogue)
-            target_dir.mkdir(parents=True, exist_ok=True)
-            target = target_dir / f"{persona.persona_id}.json"
-            target.write_text(json.dumps(data, indent=2), encoding="utf-8")
-            print(f"Imported {target}")
-        except Exception as exc:
-            print(f"error: {exc}", file=sys.stderr)
-            return EXIT_INVALID_STATE
-
-    else:
-        print(f"unknown command: {args.command}", file=sys.stderr)
-        return EXIT_USAGE
-
-    return EXIT_OK
+    print(f"unknown command: {args.command}", file=sys.stderr)
+    return EXIT_USAGE
 
 
 def cmd_voices(args: argparse.Namespace) -> int:
@@ -237,17 +255,23 @@ def cmd_voices(args: argparse.Namespace) -> int:
 
 def cmd_serve(args: argparse.Namespace) -> int:
     """Start the local web server."""
-    # Import here to avoid heavy imports when not needed
-    # The server module will be created separately
-    print("Server not yet implemented", file=sys.stderr)
-    return EXIT_INVALID_STATE
+    # Imported here so that the other commands stay fast to start.
+    from herhim.server import run_server
+
+    try:
+        run_server(host=args.host, port=args.port)
+    except OSError as exc:
+        print(f"could not start server: {exc}", file=sys.stderr)
+        return EXIT_INVALID_STATE
+
+    return EXIT_OK
 
 
 def cmd_doctor(args: argparse.Namespace) -> int:
     """Run diagnostic checks."""
     from herhim.catalog.quality import analyse_catalogue
 
-    issues = []
+    issues: list[str] = []
     for catalogue in ("her", "him"):
         try:
             personas = load_catalogue_cards(catalogue)
@@ -266,20 +290,17 @@ def cmd_doctor(args: argparse.Namespace) -> int:
             "issues": issues,
         }
         print(json.dumps(result, indent=2))
+    elif issues:
+        for issue in issues:
+            print(f"ISSUE: {issue}")
     else:
-        if issues:
-            for issue in issues:
-                print(f"ISSUE: {issue}")
-        else:
-            print("All diagnostics passed")
+        print("All diagnostics passed")
 
     return EXIT_OK if not issues else EXIT_INVALID_STATE
 
 
 def cmd_audit(args: argparse.Namespace) -> int:
     """View audit history."""
-    from herhim.guardrails.audit import AuditLog
-
     audit_path = Path(args.log or ".herhim-audit.jsonl")
     log = AuditLog.load(audit_path)
 
@@ -305,21 +326,41 @@ def build_parser() -> argparse.ArgumentParser:
 
     # catalogue command
     cp = subparsers.add_parser("catalogue", help="List catalogues")
-    cp.add_argument("--catalogue", choices=["her", "him", "both"], default="both", help="Which catalogue")
+    cp.add_argument(
+        "--catalogue",
+        choices=["her", "him", "both"],
+        default="both",
+        help="Which catalogue",
+    )
     cp.add_argument("--json", action="store_true", dest="json_output", help="JSON output")
     cp.set_defaults(func=cmd_catalogue)
 
     # show command
     sp = subparsers.add_parser("show", help="Show persona details")
     sp.add_argument("--persona-id", required=False, dest="persona_id", help="Persona ID")
-    sp.add_argument("--catalogue", choices=["her", "him", "both"], default="both", help="Catalogue to search")
+    sp.add_argument(
+        "--catalogue",
+        choices=["her", "him", "both"],
+        default="both",
+        help="Catalogue to search",
+    )
     sp.add_argument("--json", action="store_true", dest="json_output", help="JSON output")
     sp.set_defaults(func=cmd_show)
 
     # chat command
     chat_p = subparsers.add_parser("chat", help="Start interactive chat")
-    chat_p.add_argument("--catalogue", choices=["her", "him"], default="her", help="Which catalogue")
-    chat_p.add_argument("--offline", action="store_true", help="Use offline provider")
+    chat_p.add_argument(
+        "--catalogue",
+        choices=["her", "him"],
+        default="her",
+        help="Which catalogue",
+    )
+    chat_p.add_argument(
+        "--provider",
+        choices=sorted(PROVIDER_FACTORIES),
+        default="offline",
+        help="LLM provider to use",
+    )
     chat_p.add_argument("--model", default=None, help="Model to use (for future)")
     chat_p.add_argument("--max-turns", type=int, default=100, help="Maximum turns")
     chat_p.add_argument("--json", action="store_true", dest="json_output", help="JSON output")
@@ -368,7 +409,8 @@ def main(argv: list[str] | None = None) -> int:
         parser.print_help()
         return EXIT_USAGE
 
-    return args.func(args)
+    handler = cast("Callable[[argparse.Namespace], int]", args.func)
+    return handler(args)
 
 
 if __name__ == "__main__":

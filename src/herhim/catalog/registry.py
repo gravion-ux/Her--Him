@@ -59,7 +59,7 @@ class PersonaRegistry:
 
     def catalogues(self) -> list[str]:
         """Return the catalogue names present in the registry."""
-        return sorted({persona.catalogue for persona in self._personas})
+        return sorted({persona.catalogue for persona in self._personas.values()})
 
     def manifest(self, catalogue: str) -> dict[str, object]:
         """Return one catalogue's manifest."""

@@ -67,5 +67,5 @@ class TraitProfile:
 
     def dominant(self) -> tuple[str, float]:
         """Return the highest axis and its value."""
-        best_name = max(TRAIT_NAMES, key=lambda name: self.get(name))
+        best_name = max(TRAIT_NAMES, key=self.get)
         return best_name, self.get(best_name)

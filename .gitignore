@@ -39,6 +39,7 @@ venv.bak/
 # Test caches
 .pytest_cache/
 .coverage
+coverage.xml
 htmlcov/
 
 # mypy

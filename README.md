@@ -36,7 +36,7 @@ herhim catalogue
 herhim show --persona-id her-001-sassy
 
 # Start interactive chat
-herhim chat --catalogue her --offline
+herhim chat --catalogue her --provider offline
 
 # List available voices
 herhim voices --engine samples

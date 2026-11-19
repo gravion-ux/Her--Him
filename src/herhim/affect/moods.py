@@ -12,7 +12,7 @@ comes out.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 from herhim.models.affect import AffectVector
 from herhim.models.events import EventKind
@@ -30,7 +30,7 @@ __all__ = [
 ]
 
 
-class MoodLabel(str, Enum):
+class MoodLabel(StrEnum):
     """The eighteen attitude labels a persona can hold."""
 
     FIERCE = "fierce"

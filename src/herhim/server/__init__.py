@@ -8,16 +8,14 @@ from __future__ import annotations
 
 import json
 from http.server import HTTPServer, SimpleHTTPRequestHandler
-from pathlib import Path
 from typing import Any
 
-from herhim.catalog.loader import load_catalogue_cards, load_manifest
+from herhim.catalog.loader import load_catalogue_cards
 from herhim.catalog.registry import PersonaRegistry
 from herhim.experience.her import load_her_surface
 from herhim.experience.him import load_him_surface
-from herhim.experience.session import Session
 
-__all__ = ["run_server", "create_app"]
+__all__ = ["create_app", "run_server"]
 
 
 class HerhimHandler(SimpleHTTPRequestHandler):
@@ -42,14 +40,18 @@ class HerhimHandler(SimpleHTTPRequestHandler):
 
     def _serve_index(self) -> None:
         """Serve the index page."""
-        html = self._render_html("/", "Her & Him", "Two complete AI-companion personality catalogues")
+        html = self._render_html(
+            "/",
+            "Her & Him",
+            "Two complete AI-companion personality catalogues",
+        )
         self._send_html(html)
 
     def _serve_her(self) -> None:
         """Serve the Her catalogue page."""
         surface = load_her_surface()
         html = self._render_html(
-            f"/her",
+            "/her",
             surface.title,
             surface.subtitle,
             theme=surface.theme,
@@ -61,7 +63,7 @@ class HerhimHandler(SimpleHTTPRequestHandler):
         """Serve the Him catalogue page."""
         surface = load_him_surface()
         html = self._render_html(
-            f"/him",
+            "/him",
             surface.title,
             surface.subtitle,
             theme=surface.theme,
@@ -136,6 +138,7 @@ class HerhimHandler(SimpleHTTPRequestHandler):
         bg = theme.get("--bg", "#1a1a2e")
         fg = theme.get("--fg", "#eaeaea")
         accent = theme.get("--accent", "#e94560")
+        catalogue_filter = path[1:] if len(path) > 1 else "merged"
 
         return f'''<!DOCTYPE html>
 <html lang="en">
@@ -198,16 +201,18 @@ class HerhimHandler(SimpleHTTPRequestHandler):
             .then(r => r.json())
             .then(data => {{
                 const container = document.getElementById('personas');
-                const personas = data.personas.filter(p => p.catalogue === '{path[1:] if len(path) > 1 else 'merged'}');
+                const personas = data.personas.filter(p => p.catalogue === '{catalogue_filter}');
                 container.innerHTML = personas.map(p => `
                     <div class="persona-card">
                         <div>
-                            <div class="persona-name">{p.display_name}</div>
-                            <div class="persona-tagline">{p.tagline}</div>
-                            <div style="font-size: 0.8rem; opacity: 0.6;">{p.locale} • {p.voice_name}</div>
+                            <div class="persona-name">{{p.display_name}}</div>
+                            <div class="persona-tagline">{{p.tagline}}</div>
+                            <div style="font-size: 0.8rem; opacity: 0.6;">
+                                {{p.locale}} • {{p.voice_name}}
+                            </div>
                         </div>
                         <div>
-                            <a class="persona-link" href="/chat?persona={p.persona_id}">Chat</a>
+                            <a class="persona-link" href="/chat?persona={{p.persona_id}}">Chat</a>
                         </div>
                     </div>
                 `).join('');
@@ -240,12 +245,12 @@ def run_server(
     server_address = (host, port)
     httpd = HTTPServer(server_address, HerhimHandler)
     print(f"Her & Him server running at http://{host}:{port}/")
-    print(f"  /her   - Her (female) personas")
-    print(f"  /him   - Him (male) personas")
-    print(f"  /api/  - REST API")
+    print("  /her   - Her (female) personas")
+    print("  /him   - Him (male) personas")
+    print("  /api/  - REST API")
     httpd.serve_forever()
 
 
-def create_app() -> HerhimHandler:
+def create_app() -> type[HerhimHandler]:
     """Create the handler for testing."""
     return HerhimHandler

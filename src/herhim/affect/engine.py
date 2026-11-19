@@ -9,8 +9,9 @@ from __future__ import annotations
 
 import math
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Callable
+from typing import cast
 
 from herhim.affect.classifier import EventClassifier, base_deltas
 from herhim.affect.moods import MOOD_LABELS, MoodLabel, derive_mood, event_mood_bias
@@ -347,9 +348,13 @@ class AffectEngine:
 
     def restore(self, state: dict[str, object]) -> None:
         """Restore engine state from a snapshot mapping."""
-        self.vector = AffectVector.from_dict(dict(state.get("affect") or {}))  # type: ignore[arg-type]
-        self.relationship = RelationshipState.from_dict(dict(state.get("relationship") or {}))  # type: ignore[arg-type]
-        self.turn_index = int(state.get("turn_index", 0) or 0)
+        affect = state.get("affect")
+        relationship = state.get("relationship")
+        self.vector = AffectVector.from_dict(cast("dict[str, float]", affect or {}))
+        self.relationship = RelationshipState.from_dict(
+            cast("dict[str, float]", relationship or {})
+        )
+        self.turn_index = int(cast("int", state.get("turn_index") or 0))
         self.mood = MoodLabel(str(state.get("mood", MoodLabel.CALM.value)))
         self.last_active = self.clock()
 

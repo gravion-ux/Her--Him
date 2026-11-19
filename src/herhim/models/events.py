@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 __all__ = ["DetectedEvent", "EventKind"]
 
 
-class EventKind(str, Enum):
+class EventKind(StrEnum):
     """The twelve conversational events the classifier recognises."""
 
     REJECTION = "REJECTION"

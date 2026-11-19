@@ -14,36 +14,39 @@ __all__ = [
     "EXIT_INVALID_STATE",
     "EXIT_OK",
     "EXIT_USAGE",
-    "HerhimError",
+    "ExitCode",
     "GuardrailError",
+    "HerhimError",
     "PersonaError",
     "ProviderError",
     "VoiceError",
 ]
 
 
-class EXIT_OK(IntEnum):
-    """Successful completion."""
+class ExitCode(IntEnum):
+    """The stable process exit codes used by the command line entry points.
+
+    These are plain integers at runtime, so they can be returned from a
+    ``main()`` function or passed straight to :func:`sys.exit`.
+    """
 
     OK = 0
-
-
-class EXIT_USAGE(IntEnum):
-    """The command line was malformed."""
-
     USAGE = 2
-
-
-class EXIT_INVALID_INPUT(IntEnum):
-    """A supplied value was well-formed but semantically invalid."""
-
     INVALID_INPUT = 3
-
-
-class EXIT_INVALID_STATE(IntEnum):
-    """The runtime reached a state it cannot recover from."""
-
     INVALID_STATE = 4
+
+
+#: Successful completion.
+EXIT_OK = ExitCode.OK
+
+#: The command line was malformed.
+EXIT_USAGE = ExitCode.USAGE
+
+#: A supplied value was well-formed but semantically invalid.
+EXIT_INVALID_INPUT = ExitCode.INVALID_INPUT
+
+#: The runtime reached a state it cannot recover from.
+EXIT_INVALID_STATE = ExitCode.INVALID_STATE
 
 
 class HerhimError(Exception):

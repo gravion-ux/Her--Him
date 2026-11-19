@@ -16,6 +16,13 @@ from herhim.models.traits import TraitProfile
 
 __all__ = ["MoodGuidance", "build_directive", "mood_guidance"]
 
+#: Tenderness below this level means the persona must not write warm lines.
+_COLD_TENDERNESS_THRESHOLD = 0.3
+#: Assertion above this level means the persona is firmly positioned.
+_STRONG_ASSERTION_THRESHOLD = 0.65
+#: Stubbornness above this level means the persona refuses to back down.
+_HIGH_STUBBORNNESS_THRESHOLD = 0.5
+
 
 @dataclass(frozen=True)
 class MoodGuidance:
@@ -194,9 +201,12 @@ def build_directive(
         avoid.append("escalate anything physical or intimate")
         lines.append("- A boundary was just set. Respect it completely this turn.")
 
-    if vector.tenderness < 0.3:
+    if vector.tenderness < _COLD_TENDERNESS_THRESHOLD:
         lines.append("- She is not feeling tender right now. Do not write warm lines.")
-    if vector.assertion > 0.65 and traits.stubbornness > 0.5:
+    if (
+        vector.assertion > _STRONG_ASSERTION_THRESHOLD
+        and traits.stubbornness > _HIGH_STUBBORNNESS_THRESHOLD
+    ):
         lines.append("- She will not back down from her position.")
 
     lines.append("")

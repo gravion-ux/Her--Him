@@ -14,6 +14,7 @@ from __future__ import annotations
 import shutil
 import subprocess
 import tempfile
+import wave
 from pathlib import Path
 
 from herhim.errors import VoiceError
@@ -116,11 +117,11 @@ class PiperVoiceEngine:
     def _synthesize_with_package(self, text: str, model: Path, output: Path) -> None:
         """Render using the ``piper`` Python package."""
         try:
-            from piper.voice import PiperVoice  # type: ignore[import-not-found]
+            from piper.voice import PiperVoice
         except ImportError as exc:
             raise VoiceError(
                 "piper is not installed. Install the 'voice' extra: pip install 'herhim[voice]'"
             ) from exc
         voice = PiperVoice.load(str(model))
-        with wave_open(output) as handle:
+        with wave.open(str(output), "wb") as handle:
             voice.synthesize(text, handle)

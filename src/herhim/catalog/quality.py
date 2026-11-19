@@ -125,7 +125,8 @@ def analyse_catalogue(catalogue: str, personas: list[Persona]) -> QualityReport:
                         "high",
                         persona.persona_id,
                         f"too similar to {other.persona_id} "
-                        f"(distance {_trait_distance(persona, other):.3f} < {CONTRAST_MIN_DISTANCE})",
+                        f"(distance {_trait_distance(persona, other):.3f} "
+                        f"< {CONTRAST_MIN_DISTANCE})",
                     )
                 )
 

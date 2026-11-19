@@ -50,6 +50,17 @@ class CatalogueSurface:
         }
 
 
+def _theme_tokens(value: object) -> dict[str, str]:
+    """Coerce a manifest theme into a mapping of CSS tokens.
+
+    Raises:
+        TypeError: When the theme is not a mapping.
+    """
+    if not isinstance(value, dict):
+        raise TypeError(f"theme must be a mapping, got {type(value).__name__}")
+    return {str(key): str(item) for key, item in value.items()}
+
+
 def load_surface(catalogue: str) -> CatalogueSurface:
     """Load one catalogue's surface from its manifest."""
     manifest = load_manifest(catalogue)
@@ -58,7 +69,7 @@ def load_surface(catalogue: str) -> CatalogueSurface:
             catalogue=catalogue,
             title=str(manifest.get("title", catalogue.title())),
             subtitle=str(manifest.get("subtitle", "")),
-            theme={str(k): str(v) for k, v in dict(manifest.get("theme", {})).items()},
+            theme=_theme_tokens(manifest.get("theme", {})),
             onboarding=str(manifest.get("onboarding", "")),
             default_persona=str(manifest.get("default_persona", "")),
             default_locale=str(manifest.get("default_locale", "en_US")),

@@ -25,7 +25,7 @@ HARD_PATTERNS = [
     # AWS keys (hard pattern - starts with AKIA)
     re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
     # Generic AWS keys (hard pattern)
-    re.compile(r"\b(?i)aws_secret_access_key['\"]?\s*[:=]\s*['\"`](?!synthetic)[^\s\"']+"),
+    re.compile(r"(?i)\baws_secret_access_key['\"]?\s*[:=]\s*['\"`](?!synthetic)[^\s\"']+"),
     # Private keys (hard pattern)
     re.compile(r"-----BEGIN (RSA |DSA |EC |OPENSSH )?PRIVATE KEY-----"),
     # Service account keys

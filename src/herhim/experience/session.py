@@ -210,7 +210,8 @@ class Session:
         self.memory.add_turn("user", user_text, source="user")
         self.memory.add_turn("assistant", response.text, source=self.persona.persona_id)
         self.memory.add_episode(
-            f"Turn {self.engine.turn_index}: {primary_event or 'neutral'} -> {rationale.mood.value}",
+            f"Turn {self.engine.turn_index}: {primary_event or 'neutral'} "
+            f"-> {rationale.mood.value}",
             source="affect-engine",
         )
 

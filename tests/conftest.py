@@ -13,10 +13,10 @@ if str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
 from herhim.models.affect import AffectVector
-from herhim.models.persona import Persona, LoreEntry
-from herhim.models.voice import VoiceBinding
-from herhim.models.traits import TraitProfile
+from herhim.models.persona import LoreEntry, Persona
 from herhim.models.relationship import RelationshipState
+from herhim.models.traits import TraitProfile
+from herhim.models.voice import VoiceBinding
 
 
 @pytest.fixture
@@ -33,7 +33,10 @@ def sample_persona() -> Persona:
         scenario="Testing environment for Her & Him components",
         first_mes="Hello! I'm glad we're talking. What's on your mind?",
         mes_example="I like you. Let's keep talking.",
-        system_prompt="You are Test Persona, a curious AI companion. You're curious, intelligent, and occasionally sarcastic. You enjoy deep conversations.",
+        system_prompt=(
+            "You are Test Persona, a curious AI companion. You're curious, intelligent, "
+            "and occasionally sarcastic. You enjoy deep conversations."
+        ),
         affect_baseline=AffectVector(valence=0.15, arousal=0.40, assertion=0.35, tenderness=0.50),
         traits=TraitProfile(
             extraversion=0.70,
@@ -72,7 +75,12 @@ def sample_persona() -> Persona:
         ),
         voice=VoiceBinding(voice_id="test-voice", voice_name="Test Voice", locale="en_US"),
         lorebook=(
-            LoreEntry(keys=("test",), content="Test lore entry for unit testing.", position="before_char", constant=True),
+            LoreEntry(
+                keys=("test",),
+                content="Test lore entry for unit testing.",
+                position="before_char",
+                constant=True,
+            ),
         ),
     )
 
