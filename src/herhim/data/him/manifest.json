@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0.0",
+  "title": "Him Catalogue",
+  "subtitle": "24 personality profiles for male AI companions",
+  "description": "A collection of 24 distinct male AI companion personalities, each with unique traits, voice bindings, and relationship dynamics.",
+  "catalogue": "him",
+  "default_persona": "him-001-steady",
+  "default_locale": "en_US",
+  "persona_count": 24,
+  "version": "1.0.0",
+  "theme": {
+    "--primary": "#4a90d9",
+    "--secondary": "#c7e0f4",
+    "--bg": "#1a1a2e",
+    "--fg": "#eaeaea",
+    "--accent": "#4a90d9"
+  },
+  "onboarding": "Welcome to the Him Catalogue. Your AI companion will be a male persona with distinct personality traits, moods, and relationship dynamics. Each persona has a unique voice and emotional baseline. Select your preferred personality or let the system match you."
+}

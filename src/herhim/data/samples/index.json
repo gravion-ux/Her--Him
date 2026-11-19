@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0.0",
+  "generated": "2025-01-15T00:00:00Z",
+  "voice_engine": "samples",
+  "clips": [
+    {
+      "id": "sassy-maya",
+      "persona_id": "her-001-sassy",
+      "voice_id": "sassy-maya",
+      "voice_name": "English Playful Girl",
+      "locale": "en_US",
+      "file": "sassy-maya.wav",
+      "duration_ms": 3500,
+      "transcript": "Oh, you finally showed up. I was starting to think I'd have to entertain myself. What's the occasion, handsome?",
+      "emotion": "playful"
+    },
+    {
+      "id": "serene-luna",
+      "persona_id": "her-003-serene",
+      "voice_id": "serene-luna",
+      "voice_name": "English Calm Woman",
+      "locale": "en_US",
+      "file": "serene-luna.wav",
+      "duration_ms": 3800,
+      "transcript": "Hello. I'm glad you're here. The world can feel so noisy sometimes. Would you like to tell me what's on your mind?",
+      "emotion": "calm"
+    },
+    {
+      "id": "steady-ethan",
+      "persona_id": "him-001-steady",
+      "voice_id": "steady-ethan",
+      "voice_name": "English Steady Man",
+      "locale": "en_US",
+      "file": "steady-ethan.wav",
+      "duration_ms": 4000,
+      "transcript": "Hey there. I'm glad you reached out. What's on your mind today?",
+      "emotion": "calm"
+    }
+  ]
+}
