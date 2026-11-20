@@ -37,7 +37,7 @@ def _namespace(**overrides: object) -> argparse.Namespace:
         "catalogue": "both",
         "persona_id": None,
         "json_output": False,
-        "offline": True,
+        "provider": "offline",
         "max_turns": 3,
         "output": None,
         "file": None,
@@ -177,30 +177,43 @@ def test_show_surfaces_load_errors(
     monkeypatch.setattr(cli, "load_catalogue_cards", _raise_on_load)
     assert cli.cmd_show(_namespace(persona_id="her-001-sassy")) == EXIT_INVALID_STATE
     err = capsys.readouterr().err
-    assert "error loading" in err
+    assert "warning: skipping her" in err
     assert "persona not found" in err
 
 
 # -- provider selection ---------------------------------------------------
 
 
-def test_select_provider_prefers_offline_when_asked() -> None:
-    """``--offline`` always wins."""
-    assert isinstance(cli._select_provider(_namespace(offline=True)), OfflineProvider)
+def test_select_provider_builds_the_offline_provider() -> None:
+    """``--provider offline`` selects the offline provider."""
+    provider, problem = cli._build_provider(_namespace(provider="offline"))
+    assert problem == ""
+    assert isinstance(provider, OfflineProvider)
 
 
-def test_select_provider_falls_back_to_offline(monkeypatch: pytest.MonkeyPatch) -> None:
-    """An unconfigured endpoint falls back to the offline provider."""
+def test_select_provider_refuses_an_unconfigured_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:
+    """An openai-compatible provider without configuration is refused."""
     monkeypatch.delenv("HERHIM_LLM_BASE_URL", raising=False)
     monkeypatch.delenv("HERHIM_LLM_MODEL", raising=False)
-    assert isinstance(cli._select_provider(_namespace(offline=False)), OfflineProvider)
+    provider, problem = cli._build_provider(_namespace(provider="openai-compatible"))
+    assert provider is None
+    assert "not configured" in problem
 
 
 def test_select_provider_uses_a_configured_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:
     """A configured endpoint is used instead of the offline provider."""
     monkeypatch.setenv("HERHIM_LLM_BASE_URL", "http://localhost:11434/v1")
     monkeypatch.setenv("HERHIM_LLM_MODEL", "llama3")
-    assert isinstance(cli._select_provider(_namespace(offline=False)), OpenAICompatibleProvider)
+    provider, problem = cli._build_provider(_namespace(provider="openai-compatible"))
+    assert problem == ""
+    assert isinstance(provider, OpenAICompatibleProvider)
+
+
+def test_select_provider_refuses_an_unknown_provider() -> None:
+    """A provider that is not registered is refused."""
+    provider, problem = cli._build_provider(_namespace(provider="nonsense"))
+    assert provider is None
+    assert "unknown provider" in problem
 
 
 # -- chat -----------------------------------------------------------------
@@ -257,7 +270,7 @@ def test_chat_reports_a_provider_failure(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     """A failing provider is reported and the session carries on."""
-    monkeypatch.setattr(cli, "_select_provider", lambda args: _FailingProvider())
+    monkeypatch.setattr(cli, "_build_provider", lambda args: (_FailingProvider(), ""))
     answers = iter(["hello", "exit"])
     monkeypatch.setattr("builtins.input", lambda prompt="": next(answers))
     assert cli.cmd_chat(_namespace(catalogue="her", max_turns=5)) == EXIT_OK

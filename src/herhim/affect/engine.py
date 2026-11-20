@@ -11,7 +11,6 @@ import math
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import cast
 
 from herhim.affect.classifier import EventClassifier, base_deltas
 from herhim.affect.moods import MOOD_LABELS, MoodLabel, derive_mood, event_mood_bias
@@ -34,6 +33,34 @@ DECAY_PER_TURN = 0.08
 OFFLINE_TAU_MINUTES = 240.0
 
 _AXES = ("valence", "arousal", "assertion", "tenderness")
+
+
+def _numeric_mapping(value: object) -> dict[str, float]:
+    """Coerce a snapshot mapping into floats, ignoring anything unusable."""
+    if not isinstance(value, dict):
+        return {}
+    coerced: dict[str, float] = {}
+    for key, item in value.items():
+        try:
+            coerced[str(key)] = float(item)
+        except (TypeError, ValueError):
+            continue
+    return coerced
+
+
+def _as_int(value: object, default: int = 0) -> int:
+    """Coerce a snapshot value into an int, falling back to ``default``."""
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, (int, float)):
+        return int(value)
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            return default
+    return default
+
 
 #: Per-event trait scaling. Each entry maps a trait to the axis it moves, how
 #: strongly, and whether it amplifies or damps the effect.
@@ -347,14 +374,17 @@ class AffectEngine:
         )
 
     def restore(self, state: dict[str, object]) -> None:
-        """Restore engine state from a snapshot mapping."""
-        affect = state.get("affect")
-        relationship = state.get("relationship")
-        self.vector = AffectVector.from_dict(cast("dict[str, float]", affect or {}))
+        """Restore engine state from a snapshot mapping.
+
+        A snapshot is written to disk and read back later, so any value in it
+        may be missing or damaged. Unusable values fall back to the defaults
+        instead of raising.
+        """
+        self.vector = AffectVector.from_dict(_numeric_mapping(state.get("affect")))
         self.relationship = RelationshipState.from_dict(
-            cast("dict[str, float]", relationship or {})
+            _numeric_mapping(state.get("relationship"))
         )
-        self.turn_index = int(cast("int", state.get("turn_index") or 0))
+        self.turn_index = _as_int(state.get("turn_index", 0))
         self.mood = MoodLabel(str(state.get("mood", MoodLabel.CALM.value)))
         self.last_active = self.clock()
 

@@ -211,13 +211,14 @@ class TestSurfaces:
         assert "theme" in data
         assert "onboarding" in data
 
-    def test_a_non_mapping_theme_is_ignored(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """A theme that is not an object is treated as empty."""
+    def test_a_non_mapping_theme_is_reported(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """A theme that is not an object is reported as a malformed manifest."""
         monkeypatch.setattr(
             "herhim.experience.surface.load_manifest",
             lambda catalogue: {"catalogue": catalogue, "theme": "nonsense"},
         )
-        assert load_surface("her").theme == {}
+        with pytest.raises(PersonaError, match="malformed"):
+            load_surface("her")
 
     def test_a_missing_title_falls_back_to_the_catalogue_name(
         self, monkeypatch: pytest.MonkeyPatch
