@@ -75,13 +75,6 @@ select = ["E", "F", "I", "UP", "B", "S", "PL", "RUF"]
 [tool.ruff.lint.per-file-ignores]
 # Tests assert on expected failures and compare against literal thresholds.
 "tests/*" = ["S101", "PLR2004"]
-# conftest.py must extend sys.path before the package under test can be imported.
-"tests/conftest.py" = ["E402"]
-# The CLI defers heavy imports so --help and catalogue listing stay fast.
-"src/herhim/cli.py" = ["PLC0415"]
-# The optional TTS backends are imported lazily so their dependencies stay optional.
-"src/herhim/voice/kokoro.py" = ["PLC0415"]
-"src/herhim/voice/piper.py" = ["PLC0415"]
 
 [tool.mypy]
 python_version = "3.11"
@@ -94,8 +87,8 @@ packages = ["herhim"]
 module = ["herhim.data.*"]
 ignore_missing_imports = true
 
-# The optional TTS backends are not installed in CI. Their modules are imported
-# lazily, so the missing stubs are expected rather than an error.
+# Optional voice backends. They are only installed by the "voice" extra and
+# are imported lazily, so their absence must not fail the type check.
 [[tool.mypy.overrides]]
 module = ["kokoro", "kokoro.*", "numpy", "numpy.*", "piper", "piper.*"]
 ignore_missing_imports = true
@@ -103,6 +96,7 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 minversion = "8.0"
 testpaths = ["tests"]
+pythonpath = ["src"]
 addopts = "-ra --strict-markers --strict-config"
 markers = [
     "slow: tests that take more than a second",
@@ -113,10 +107,9 @@ branch = true
 source = ["herhim"]
 
 [tool.coverage.report]
-# Ratchet floor. The suite currently exercises ~31% of the package; the project
-# target is 90%, tracked separately. CI enforces this floor so coverage cannot
-# silently regress as new code lands, without blocking new work in the interim.
-fail_under = 30
+# The suite covers the whole package, so the gate stays at the project target
+# of 90%. Lowering it would let coverage regress unnoticed.
+fail_under = 90
 show_missing = true
 skip_covered = false
 exclude_lines = [

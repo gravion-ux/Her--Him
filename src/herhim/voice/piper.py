@@ -56,7 +56,7 @@ class PiperVoiceEngine:
         if self.binary:
             return True
         try:
-            import piper  # noqa: F401
+            import piper  # noqa: F401, PLC0415
         except ImportError:
             return False
         return True
@@ -117,7 +117,7 @@ class PiperVoiceEngine:
     def _synthesize_with_package(self, text: str, model: Path, output: Path) -> None:
         """Render using the ``piper`` Python package."""
         try:
-            from piper.voice import PiperVoice
+            from piper.voice import PiperVoice  # noqa: PLC0415
         except ImportError as exc:
             raise VoiceError(
                 "piper is not installed. Install the 'voice' extra: pip install 'herhim[voice]'"

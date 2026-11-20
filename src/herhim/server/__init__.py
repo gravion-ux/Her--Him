@@ -138,7 +138,7 @@ class HerhimHandler(SimpleHTTPRequestHandler):
         bg = theme.get("--bg", "#1a1a2e")
         fg = theme.get("--fg", "#eaeaea")
         accent = theme.get("--accent", "#e94560")
-        catalogue_filter = path[1:] if len(path) > 1 else "merged"
+        catalogue = path[1:] if len(path) > 1 else "merged"
 
         return f'''<!DOCTYPE html>
 <html lang="en">
@@ -201,18 +201,18 @@ class HerhimHandler(SimpleHTTPRequestHandler):
             .then(r => r.json())
             .then(data => {{
                 const container = document.getElementById('personas');
-                const personas = data.personas.filter(p => p.catalogue === '{catalogue_filter}');
+                const personas = data.personas.filter(p => p.catalogue === '{catalogue}');
                 container.innerHTML = personas.map(p => `
                     <div class="persona-card">
                         <div>
-                            <div class="persona-name">{{p.display_name}}</div>
-                            <div class="persona-tagline">{{p.tagline}}</div>
+                            <div class="persona-name">${{p.display_name}}</div>
+                            <div class="persona-tagline">${{p.tagline}}</div>
                             <div style="font-size: 0.8rem; opacity: 0.6;">
-                                {{p.locale}} • {{p.voice_name}}
+                                ${{p.locale}} • ${{p.voice_name}}
                             </div>
                         </div>
                         <div>
-                            <a class="persona-link" href="/chat?persona={{p.persona_id}}">Chat</a>
+                            <a class="persona-link" href="/chat?persona=${{p.persona_id}}">Chat</a>
                         </div>
                     </div>
                 `).join('');
@@ -252,5 +252,5 @@ def run_server(
 
 
 def create_app() -> type[HerhimHandler]:
-    """Create the handler for testing."""
+    """Return the request handler class used by the local server."""
     return HerhimHandler

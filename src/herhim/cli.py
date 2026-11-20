@@ -11,24 +11,31 @@ import json
 import sys
 from collections.abc import Callable
 from pathlib import Path
-from typing import cast
 
 from herhim.catalog.loader import load_catalogue_cards
+from herhim.catalog.quality import analyse_catalogue
 from herhim.catalog.registry import PersonaRegistry
 from herhim.catalog.validate import validate_persona
 from herhim.errors import EXIT_INVALID_INPUT, EXIT_INVALID_STATE, EXIT_OK, EXIT_USAGE
 from herhim.experience.her import load_her_surface
 from herhim.experience.him import load_him_surface
+from herhim.experience.session import Session
 from herhim.guardrails.audit import AuditLog
 from herhim.models.persona import Persona
+from herhim.paths import catalogue_dir
 from herhim.providers.base import LLMProvider
 from herhim.providers.offline import OfflineProvider
+from herhim.providers.openai_compat import OpenAICompatibleProvider
+from herhim.server import run_server
 from herhim.voice.factory import available_engines, build_voice_engine
 
 __all__ = ["EXIT_INVALID_INPUT", "EXIT_INVALID_STATE", "EXIT_OK", "EXIT_USAGE", "main"]
 
 #: The providers the chat command can build today.
-PROVIDER_FACTORIES: dict[str, Callable[[], LLMProvider]] = {"offline": OfflineProvider}
+PROVIDER_FACTORIES: dict[str, Callable[[], LLMProvider]] = {
+    "offline": OfflineProvider,
+    "openai-compatible": OpenAICompatibleProvider,
+}
 
 
 def cmd_catalogue(args: argparse.Namespace) -> int:
@@ -103,17 +110,33 @@ def cmd_show(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def _build_provider(args: argparse.Namespace) -> tuple[LLMProvider | None, str]:
+    """Build the provider the chat command should use.
+
+    Returns the provider and an empty message, or ``None`` and the reason why
+    no provider could be built.
+    """
+    factory = PROVIDER_FACTORIES.get(args.provider)
+    if factory is None:
+        return None, f"unknown provider: {args.provider}"
+    provider = factory()
+    if isinstance(provider, OpenAICompatibleProvider) and not provider.configured:
+        return None, (
+            "the openai-compatible provider is not configured: "
+            "set HERHIM_LLM_BASE_URL and HERHIM_LLM_MODEL"
+        )
+    return provider, ""
+
+
 def cmd_chat(args: argparse.Namespace) -> int:
     """Start an interactive chat session."""
-    from herhim.experience.session import Session
-
     if args.catalogue not in ("her", "him"):
         print(f"unknown catalogue: {args.catalogue}", file=sys.stderr)
         return EXIT_INVALID_INPUT
 
-    factory = PROVIDER_FACTORIES.get(args.provider)
-    if factory is None:
-        print(f"unknown provider: {args.provider}", file=sys.stderr)
+    provider, problem = _build_provider(args)
+    if provider is None:
+        print(problem, file=sys.stderr)
         return EXIT_INVALID_INPUT
 
     # Load the surface to get the default persona
@@ -127,10 +150,6 @@ def cmd_chat(args: argparse.Namespace) -> int:
     except Exception as exc:
         print(f"error loading persona: {exc}", file=sys.stderr)
         return EXIT_INVALID_STATE
-
-    # The session wraps the provider in its own router, so the provider itself
-    # is what gets handed over here.
-    provider: LLMProvider = factory()
 
     session = Session(
         persona=persona,
@@ -209,8 +228,6 @@ def cmd_card_import(args: argparse.Namespace) -> int:
             print(f"validation errors: {'; '.join(problems)}", file=sys.stderr)
             return EXIT_INVALID_STATE
         # Write to data directory
-        from herhim.paths import catalogue_dir
-
         target_dir = catalogue_dir(persona.catalogue)
         target_dir.mkdir(parents=True, exist_ok=True)
         target = target_dir / f"{persona.persona_id}.json"
@@ -255,9 +272,6 @@ def cmd_voices(args: argparse.Namespace) -> int:
 
 def cmd_serve(args: argparse.Namespace) -> int:
     """Start the local web server."""
-    # Imported here so that the other commands stay fast to start.
-    from herhim.server import run_server
-
     try:
         run_server(host=args.host, port=args.port)
     except OSError as exc:
@@ -269,8 +283,6 @@ def cmd_serve(args: argparse.Namespace) -> int:
 
 def cmd_doctor(args: argparse.Namespace) -> int:
     """Run diagnostic checks."""
-    from herhim.catalog.quality import analyse_catalogue
-
     issues: list[str] = []
     for catalogue in ("her", "him"):
         try:
@@ -409,7 +421,7 @@ def main(argv: list[str] | None = None) -> int:
         parser.print_help()
         return EXIT_USAGE
 
-    handler = cast("Callable[[argparse.Namespace], int]", args.func)
+    handler: Callable[[argparse.Namespace], int] = args.func
     return handler(args)
 
 

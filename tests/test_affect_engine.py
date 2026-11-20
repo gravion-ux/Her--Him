@@ -102,10 +102,7 @@ class TestAffectEngine:
             mes_example="Hi",
             system_prompt="You are a test persona.",
             affect_baseline=AffectVector(
-                valence=0.15,
-                arousal=0.40,
-                assertion=0.35,
-                tenderness=0.50,
+                valence=0.15, arousal=0.40, assertion=0.35, tenderness=0.50
             ),
             traits=TraitProfile(
                 extraversion=0.70,
@@ -185,10 +182,7 @@ class TestGoldenScenario:
             mes_example="I like you.",
             system_prompt="You are Sassy Maya.",
             affect_baseline=AffectVector(
-                valence=0.15,
-                arousal=0.40,
-                assertion=0.35,
-                tenderness=0.50,
+                valence=0.15, arousal=0.40, assertion=0.35, tenderness=0.50
             ),
             traits=TraitProfile(
                 extraversion=0.70,

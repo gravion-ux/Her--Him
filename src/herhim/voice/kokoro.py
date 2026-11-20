@@ -45,7 +45,7 @@ class KokoroVoiceEngine:
         if self.binary:
             return True
         try:
-            import kokoro  # noqa: F401
+            import kokoro  # noqa: F401, PLC0415
         except ImportError:
             return False
         return True
@@ -92,8 +92,8 @@ class KokoroVoiceEngine:
     def _synthesize_with_package(self, text: str, output: Path, params: VoiceParams) -> None:
         """Render using the ``kokoro`` Python package."""
         try:
-            import numpy as np
-            from kokoro import KPipeline
+            import numpy as np  # noqa: PLC0415
+            from kokoro import KPipeline  # noqa: PLC0415
         except ImportError as exc:
             raise VoiceError(
                 "kokoro is not installed. Install the 'voice' extra: pip install 'herhim[voice]'"
