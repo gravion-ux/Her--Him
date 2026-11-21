@@ -11,7 +11,9 @@ import pytest
 
 from herhim.affect.moods import MoodLabel
 from herhim.errors import ProviderError
+from herhim.models.events import EventKind
 from herhim.providers import build_router
+from herhim.providers import offline as offline_module
 from herhim.providers.base import LLMProvider, LLMResponse, TurnContext
 from herhim.providers.offline import OfflineProvider
 from herhim.providers.openai_compat import (
@@ -118,6 +120,22 @@ class TestOfflineProvider:
         for label in MoodLabel:
             response = OfflineProvider().complete([], context=TurnContext(mood=label.value))
             assert response.text
+
+    def test_event_without_lines_falls_back_to_mood(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """When an event has no lines, fallback to mood selection."""
+        original_lines = offline_module._EVENT_LINES.copy()
+        # Add an event kind with no lines (empty tuple is falsy)
+        offline_module._EVENT_LINES[EventKind.APOLOGY] = ()  # type: ignore[assignment]
+
+        provider = OfflineProvider()
+        response = provider.complete(
+            [], context=TurnContext(events=("APOLOGY",), mood="calm")
+        )
+        assert response.text  # Should fall back to calm mood
+
+        # Restore
+        offline_module._EVENT_LINES.clear()
+        offline_module._EVENT_LINES.update(original_lines)
 
 
 class TestProviderRouter:

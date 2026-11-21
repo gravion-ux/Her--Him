@@ -543,3 +543,36 @@ def _finding_report(catalogue: str, personas: list[Persona]) -> QualityReport:
     """Stand in for a catalogue with one high-severity finding."""
     finding = QualityFinding("CAT-CON-001", "high", catalogue, "personas overlap")
     return QualityReport(catalogue=catalogue, findings=(finding,))
+
+
+def _mixed_report(catalogue: str, personas: list[Persona]) -> QualityReport:
+    """A report with both high and medium findings for branch coverage."""
+    finding_high = QualityFinding("CAT-CON-001", "high", catalogue, "personas overlap")
+    finding_medium = QualityFinding("CAT-COV-001", "medium", catalogue, "missing coverage")
+    return QualityReport(catalogue=catalogue, findings=(finding_high, finding_medium))
+
+
+# -- chat with unknown provider ----------------------------------------------
+
+
+def test_chat_rejects_an_unknown_provider(capsys: pytest.CaptureFixture[str]) -> None:
+    """Chat fails when the provider is not registered."""
+    args = _namespace(catalogue="her", provider="nonexistent")
+    assert cli.cmd_chat(args) == EXIT_INVALID_INPUT
+    err = capsys.readouterr().err
+    assert "unknown provider" in err
+
+
+# -- doctor branch coverage -------------------------------------------------
+
+
+def test_doctor_with_mixed_severity_findings(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Doctor only reports high/critical findings, not medium/low."""
+    monkeypatch.setattr(cli, "analyse_catalogue", _mixed_report)
+    assert cli.cmd_doctor(_namespace()) == EXIT_INVALID_STATE
+    out = capsys.readouterr().out
+    assert "ISSUE: her: personas overlap" in out
+    assert "missing coverage" not in out

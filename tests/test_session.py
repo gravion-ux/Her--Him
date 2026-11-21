@@ -13,9 +13,47 @@ from herhim.experience.session import Session
 from herhim.experience.surface import CatalogueSurface, load_surface
 from herhim.guardrails.audit import AuditLog
 from herhim.memory.store import MemoryStore
-from herhim.models.persona import Persona
+from herhim.models.affect import AffectVector
+from herhim.models.persona import LoreEntry, Persona
+from herhim.models.relationship import RelationshipState
+from herhim.models.traits import TraitProfile
 from herhim.models.voice import VoiceBinding, VoiceParams
 from herhim.providers.offline import OfflineProvider
+
+
+# Helper to create a persona without lorebook for the empty-lore branch
+def _persona_no_lore(**overrides: object) -> Persona:
+    """Build a minimal persona with no lorebook for testing empty lore branch."""
+    base: dict[str, object] = {
+        "persona_id": "test-no-lore",
+        "catalogue": "her",
+        "gender": "female",
+        "display_name": "No Lore",
+        "tagline": "A test without lore",
+        "description": "No lore here",
+        "personality": "Friendly",
+        "scenario": "Test",
+        "first_mes": "Hi",
+        "mes_example": "Hello",
+        "system_prompt": "You are friendly",
+        "affect_baseline": AffectVector(
+            valence=0.15, arousal=0.40, assertion=0.35, tenderness=0.50
+        ),
+        "traits": TraitProfile(
+            extraversion=0.70, playfulness=0.65, bratty=0.55, stubbornness=0.45,
+            warmth=0.55, jealousy=0.25, dominance=0.40, loyalty=0.50,
+            patience=0.40, sensuality=0.45, humour=0.60,
+        ),
+        "event_sensitivity": {"REJECTION": 1.40, "COMPLIANCE": 0.85},
+        "relationship_baseline": RelationshipState(
+            trust=0.32, intimacy=0.25, tension=0.03,
+            jealousy=0.06, dependency=0.12, commitment=0.10,
+        ),
+        "voice": VoiceBinding(voice_id="test-voice", voice_name="Test Voice", locale="en_US"),
+        "lorebook": (),  # Empty - triggers the else branch in build_messages
+    }
+    base.update(overrides)
+    return Persona(**base)  # type: ignore[arg-type]
 
 
 class _FailingProvider:
@@ -180,6 +218,59 @@ class TestSessionTurn:
         clip = session.speak("Hello there")
         assert clip.clip_id == "sassy-maya"
         assert clip.transcript
+
+    def test_turn_state_is_a_dict(self, sample_persona: Persona) -> None:
+        """Regression: result.state is a dict, not a method."""
+        session = Session(sample_persona)
+        result = session.turn("Hello")
+        assert isinstance(result.state, dict)
+        assert "stage" in result.state
+
+    def test_turn_without_loreblock(self) -> None:
+        """A persona with no lorebook has no WHAT YOU KNOW block."""
+        persona = _persona_no_lore()
+        session = Session(persona)
+        rationale = session.engine.apply_turn("hello")
+        messages = session.build_messages("hello", rationale)
+        system = messages[0]["content"]
+        assert "WHAT YOU KNOW" not in system
+
+    def test_turn_without_stage_change(self) -> None:
+        """A turn that stays in the same stage doesn't audit a change."""
+        # Create a persona already at BONDED stage
+        persona = Persona(
+            persona_id="test-bonded",
+            catalogue="her",
+            gender="female",
+            display_name="Bonded",
+            tagline="Already bonded",
+            description="High intimacy test",
+            personality="Friendly",
+            scenario="Test",
+            first_mes="Hi",
+            mes_example="Hello",
+            system_prompt="You are friendly",
+            affect_baseline=AffectVector(
+                valence=0.5, arousal=0.4, assertion=0.3, tenderness=0.5
+            ),
+            traits=TraitProfile(
+                extraversion=0.70, playfulness=0.65, bratty=0.55, stubbornness=0.45,
+                warmth=0.55, jealousy=0.25, dominance=0.40, loyalty=0.50,
+                patience=0.40, sensuality=0.45, humour=0.60,
+            ),
+            relationship_baseline=RelationshipState(
+                trust=0.99, intimacy=0.99, tension=0.0,
+                jealousy=0.0, dependency=0.99, commitment=0.99
+            ),
+            voice=VoiceBinding(voice_id="test-voice", voice_name="Test Voice", locale="en_US"),
+            lorebook=(LoreEntry(keys=("test",), content="Test lore.", constant=True),),
+        )
+        session = Session(persona)
+        # Apply a few turns without events that would change stage
+        session.turn("Hello")
+        # Check that no relationship.stage events were recorded (stage didn't change)
+        stage_events = [e for e in session.audit.events if e.kind == "relationship.stage"]
+        assert stage_events == []
 
 
 class TestSurfaces:

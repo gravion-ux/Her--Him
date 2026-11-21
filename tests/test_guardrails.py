@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from herhim.catalog.registry import PersonaRegistry
 from herhim.errors import GuardrailError
 from herhim.guardrails import scope
 from herhim.guardrails.audit import AuditEvent, AuditLog, redact
@@ -322,3 +323,23 @@ class TestIOPolicy:
         data = IOOperation("read", RiskTier.READ, True, "Read").to_dict()
         assert data["tier"] == "READ"
         assert data["requires_approval"] is True
+
+
+class TestPersonaRegistryRegression:
+    """Regression tests for the persona registry."""
+
+    def test_catalogues_returns_names(self) -> None:
+        """Regression: catalogues() returns catalogue names, iterating values.
+
+        A previous bug iterated dict keys instead of values, causing AttributeError
+        when trying to access .catalogue on a string key.
+        """
+        registry = PersonaRegistry.load(("her",))
+        assert registry.catalogues() == ["her"]
+
+    def test_catalogues_returns_both_catalogues(self) -> None:
+        """The registry returns both catalogue names when both are loaded."""
+        registry = PersonaRegistry.load()
+        catalogues = registry.catalogues()
+        assert "her" in catalogues
+        assert "him" in catalogues
