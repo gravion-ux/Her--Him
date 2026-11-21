@@ -1,5 +1,8 @@
 # Her & Him - AI Companion Catalogues
 
+[![CI](https://github.com/gravion-ux/Her--Him/actions/workflows/ci.yml/badge.svg)](https://github.com/gravion-ux/Her--Him/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/gravion-ux/Her--Him/branch/main/graph/badge.svg)](https://codecov.io/gh/gravion-ux/Her--Him)
+
 A unified platform with a complete catalogue of AI personalities for boys and girls, featuring natural multilingual voice generation and mood-driven emotional dynamics.
 
 ## Overview
