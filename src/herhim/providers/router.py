@@ -92,9 +92,10 @@ class ProviderRouter:
                     context=context,
                 )
             except ProviderError as exc:
-                failures.append("{} ({})".format(candidate.name, exc))
+                failures.append(f"{candidate.name} ({exc})")
         raise ProviderError(
-            "provider {!r} failed and silent substitution is disabled: {}".format(self._provider.name, "; ".join(failures))
+            f"provider {self._provider.name!r} failed and silent substitution is disabled: "
+            f"{'; '.join(failures)}"
         )
 
     def describe(self) -> dict[str, object]:
