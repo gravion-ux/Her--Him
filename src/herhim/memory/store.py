@@ -156,6 +156,9 @@ class MemoryStore:
 
     def recent(self, limit: int = RECENT_LIMIT) -> list[MemoryRecord]:
         """Return the most recent verbatim turns, oldest first."""
+        if limit <= 0:
+            # A negative index of zero would slice the whole layer.
+            return []
         recent = self.layer("recent")
         return recent[-limit:]
 

@@ -177,6 +177,55 @@ class TestProviderRouter:
         assert data["attempts"] == ["offline"]
         assert data["allowed_fallbacks"] == []
 
+    def test_an_allowed_fallback_is_used_when_the_primary_fails(self) -> None:
+        """A listed fallback is tried when the primary provider fails."""
+
+        class _Broken:
+            name = "broken"
+
+            def complete(self, messages, **kwargs):
+                raise ProviderError("down")
+
+        class _Standby:
+            name = "standby"
+
+            def complete(self, messages, **kwargs):
+                return LLMResponse(text="ok", provider="standby")
+
+        router = ProviderRouter(
+            _Broken(),
+            allowed_fallbacks=("standby",),
+            fallbacks={"standby": _Standby()},
+        )
+        response = router.complete([{"role": "user", "content": "hi"}])
+        assert response.provider == "standby"
+        assert router.attempts == ["broken", "standby"]
+
+    def test_an_unlisted_fallback_is_never_used(self) -> None:
+        """A provider that is not listed is never substituted."""
+
+        class _Broken:
+            name = "broken"
+
+            def complete(self, messages, **kwargs):
+                raise ProviderError("down")
+
+        class _Standby:
+            name = "standby"
+
+            def complete(self, messages, **kwargs):
+                return LLMResponse(text="ok", provider="standby")
+
+        router = ProviderRouter(_Broken(), fallbacks={"standby": _Standby()})
+        with pytest.raises(ProviderError):
+            router.complete([])
+        assert router.attempts == ["broken"]
+
+    def test_an_allowed_fallback_without_a_provider_is_refused(self) -> None:
+        """A name that has no provider behind it is a configuration error."""
+        with pytest.raises(ValueError, match="standby"):
+            ProviderRouter(OfflineProvider(), allowed_fallbacks=("standby",))
+
 
 class TestOpenAICompatibleProvider:
     """Tests for the OpenAI-compatible HTTP provider."""

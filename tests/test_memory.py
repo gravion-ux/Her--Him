@@ -104,6 +104,14 @@ class TestMemoryStoreReading:
         store.add_turn("user", "second")
         assert [record.text for record in store.recent()] == ["first", "second"]
 
+    def test_recent_with_a_zero_or_negative_limit_returns_nothing(self) -> None:
+        """A limit of zero must not slice the whole layer."""
+        store = MemoryStore()
+        store.add_turn("user", "first")
+        store.add_turn("user", "second")
+        assert store.recent(limit=0) == []
+        assert store.recent(limit=-1) == []
+
 
 class TestMemoryPersistence:
     """Tests for saving and loading the memory store."""
