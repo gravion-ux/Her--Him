@@ -34,7 +34,7 @@ dev = [
     "codespell==2.4.1",
     "mypy==1.18.2",
     "pytest==9.2.0",
-    "pytest-cov==7.0.0",
+    "pytest-cov==7.1.0",
     "ruff==0.17.4",
 ]
 voice = [
