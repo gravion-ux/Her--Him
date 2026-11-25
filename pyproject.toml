@@ -31,7 +31,7 @@ dependencies = []
 
 [project.optional-dependencies]
 dev = [
-    "codespell==2.4.1",
+    "codespell==2.4.3",
     "mypy==1.18.2",
     "pytest==9.2.0",
     "pytest-cov==7.0.0",
