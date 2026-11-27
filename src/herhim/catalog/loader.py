@@ -35,6 +35,11 @@ def load_catalogue_cards(catalogue: str, root: Path | None = None) -> list[Perso
         if path.name == "manifest.json":
             continue
         personas.append(load_card_file(path))
+    seen: set[str] = set()
+    for persona in personas:
+        if persona.persona_id in seen:
+            raise PersonaError(f"duplicate persona id in catalogue: {persona.persona_id}")
+        seen.add(persona.persona_id)
     return sorted(personas, key=lambda persona: persona.persona_id)
 
 
