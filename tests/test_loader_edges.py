@@ -1,5 +1,7 @@
 import json
+
 import pytest
+
 from herhim.catalog.loader import load_manifest
 from herhim.errors import PersonaError
 
